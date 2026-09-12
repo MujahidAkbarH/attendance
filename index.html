@@ -16,7 +16,6 @@
             color: #334155;
         }
 
-        /* Neomorphic Utilities */
         .neo-outset {
             background: #e8eff5;
             box-shadow: 8px 8px 16px #c5d0db, -8px -8px 16px #ffffff;
@@ -54,7 +53,7 @@
 
         <div class="flex flex-col gap-4">
 
-            <div id="reader-container" class="hidden neo-inset rounded-2xl p-3">
+            <div id="reader-container" class="hidden neo-inset rounded-2xl p-3 transition-all">
                 <div id="reader" class="w-full overflow-hidden rounded-xl bg-gray-200 aspect-square"></div>
             </div>
 
@@ -131,14 +130,19 @@
         }
 
         function stopScanner() {
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('start-btn').classList.remove('hidden');
-                    document.getElementById('reader-container').classList.add('hidden');
-                    document.getElementById('camera-controls').classList.add('hidden');
-                    document.getElementById('status').innerText = "Ready to Scan";
-                }).catch(err => console.error(err));
-            }
+            document.getElementById('start-btn').classList.remove('hidden');
+            document.getElementById('reader-container').classList.add('hidden');
+            document.getElementById('camera-controls').classList.add('hidden');
+
+            try {
+                if (html5QrCode) {
+                    // If the camera is paused from a successful scan, resume it before stopping to prevent library errors
+                    if (html5QrCode.getState && html5QrCode.getState() === 3) {
+                        html5QrCode.resume();
+                    }
+                    html5QrCode.stop().catch(e => console.log("Stop aborted", e));
+                }
+            } catch (e) { }
         }
 
         function switchCamera() {
@@ -158,7 +162,15 @@
             statusEl.innerText = `Authenticating: ${id}...`;
             statusEl.className = "h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide text-blue-600 neo-inset px-4 text-center";
 
-            stopScanner();
+            // Haptic feedback for initial scan capture
+            if (navigator.vibrate) navigator.vibrate(50);
+
+            // Freeze the video feed like a snapshot so the QR code doesn't vanish instantly
+            try {
+                if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.isScanning)) {
+                    html5QrCode.pause(true);
+                }
+            } catch (e) { }
 
             try {
                 const response = await fetch(APPS_SCRIPT_URL, {
@@ -173,15 +185,20 @@
                 statusEl.innerText = res.message;
                 statusEl.className = `h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide neo-inset px-4 text-center ${textClass}`;
 
+                // Haptic feedback for success
+                if (navigator.vibrate && res.success) navigator.vibrate([100, 50, 100]);
+
             } catch (err) {
                 statusEl.innerText = "Connection failed. Please retry.";
                 statusEl.className = "h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide text-red-600 neo-inset px-4 text-center";
             } finally {
+                // Wait 2.5 seconds to let the user read the success message while the camera is frozen
                 setTimeout(() => {
+                    stopScanner(); // Safely closes the camera after the delay
                     isProcessing = false;
                     statusEl.innerText = "Ready to Scan";
                     statusEl.className = "h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide text-gray-500 neo-inset px-4 text-center";
-                }, 1500);
+                }, 2500);
             }
         }
 
