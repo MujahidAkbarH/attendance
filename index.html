@@ -31,7 +31,6 @@
             box-shadow: inset 4px 4px 8px #c5d0db, inset -4px -4px 8px #ffffff;
         }
 
-        /* Clean up the injected video element */
         #reader video {
             border-radius: 12px;
             object-fit: cover;
@@ -43,27 +42,22 @@
 
     <div class="neo-outset rounded-[2rem] p-6 w-full max-w-md flex flex-col gap-6">
 
-        <!-- Header -->
         <div class="text-center">
             <h1 class="text-2xl font-bold text-blue-700">Attendance</h1>
             <p class="text-sm font-medium text-gray-500 mt-1">Scan QR or enter ID</p>
         </div>
 
-        <!-- Dynamic Status Display -->
         <div id="status"
             class="h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide text-gray-500 transition-colors neo-inset px-4 text-center">
             Ready to Scan
         </div>
 
-        <!-- Scanner Section -->
         <div class="flex flex-col gap-4">
 
-            <!-- Video Container (Hidden by default) -->
             <div id="reader-container" class="hidden neo-inset rounded-2xl p-3">
                 <div id="reader" class="w-full overflow-hidden rounded-xl bg-gray-200 aspect-square"></div>
             </div>
 
-            <!-- Massive Start Button -->
             <button id="start-btn" onclick="startScanner()"
                 class="w-full neo-outset neo-button py-6 rounded-2xl font-bold text-lg text-blue-600 transition-all flex flex-col items-center gap-2">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +70,6 @@
                 START CAMERA
             </button>
 
-            <!-- Camera Controls (Hidden by default) -->
             <div id="camera-controls" class="hidden flex gap-4">
                 <button onclick="switchCamera()"
                     class="flex-1 neo-outset neo-button py-3 rounded-xl font-semibold text-gray-600 transition-all flex justify-center items-center gap-2">
@@ -89,14 +82,12 @@
             </div>
         </div>
 
-        <!-- Visual Divider -->
         <div class="relative flex py-2 items-center">
             <div class="flex-grow border-t border-gray-300"></div>
             <span class="flex-shrink-0 mx-4 text-gray-400 font-semibold text-sm">OR</span>
             <div class="flex-grow border-t border-gray-300"></div>
         </div>
 
-        <!-- Manual Entry Section -->
         <div class="flex flex-col gap-3 bg-[#e8eff5]">
             <label class="text-sm font-bold text-gray-600 ml-2">Manual Entry</label>
             <div class="flex gap-3">
@@ -113,15 +104,11 @@
     </div>
 
     <script>
-        // REPLACE WITH YOUR APPS SCRIPT URL
-        const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec';
         let isProcessing = false;
-
-        // Custom Scanner Variables
         let html5QrCode;
-        let currentFacingMode = "environment"; // Defaults to back camera
+        let currentFacingMode = "environment";
 
-        // Initialize scanner instance
         document.addEventListener("DOMContentLoaded", () => {
             html5QrCode = new Html5Qrcode("reader");
         });
@@ -136,7 +123,7 @@
                 { facingMode: currentFacingMode },
                 { fps: 30, qrbox: { width: 250, height: 250 } },
                 (decodedText) => { handleResult(decodedText); },
-                (errorMessage) => { /* Ignore constant scan errors */ }
+                (errorMessage) => { }
             ).catch((err) => {
                 alert("Camera access denied. Please check site permissions.");
                 stopScanner();
@@ -171,7 +158,6 @@
             statusEl.innerText = `Authenticating: ${id}...`;
             statusEl.className = "h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide text-blue-600 neo-inset px-4 text-center";
 
-            // Stop scanner temporarily while processing to prevent battery drain and double scans
             stopScanner();
 
             try {
@@ -195,7 +181,7 @@
                     isProcessing = false;
                     statusEl.innerText = "Ready to Scan";
                     statusEl.className = "h-14 rounded-2xl flex items-center justify-center font-bold text-base tracking-wide text-gray-500 neo-inset px-4 text-center";
-                }, 1500); // Leave result on screen slightly longer so older staff can read it
+                }, 1500);
             }
         }
 
