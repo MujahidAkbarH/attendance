@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Attendance Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Light blue-tinted white background */
+            background-color: #e8eff5;
+            color: #334155;
+        }
+
+        /* Light Neomorphic Utilities */
+        .neo-outset {
+            background: #e8eff5;
+            box-shadow: 8px 8px 16px #c5d0db, -8px -8px 16px #ffffff;
+        }
+
+        .neo-inset {
+            background: #e8eff5;
+            box-shadow: inset 6px 6px 12px #c5d0db, inset -6px -6px 12px #ffffff;
+        }
+
+        .neo-button {
+            color: #2563eb;
+        }
+
+        .neo-button:active {
+            box-shadow: inset 4px 4px 8px #c5d0db, inset -4px -4px 8px #ffffff;
+        }
+
+        /* Override html5-qrcode default borders */
+        #reader {
+            border: none !important;
+        }
+
+        #reader__dashboard_section_csr span {
+            color: #64748b !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="neo-outset rounded-3xl p-8 w-full max-w-md flex flex-col gap-6">
+        <h1 class="text-lg font-semibold text-center tracking-wide text-blue-700">Attendance Portal</h1>
+
+        <div class="neo-inset rounded-2xl overflow-hidden p-3">
+            <div id="reader" class="w-full rounded-xl overflow-hidden"></div>
+        </div>
+
+        <div class="flex gap-4 mt-2">
+            <input type="text" id="manualId"
+                class="w-full neo-inset rounded-xl px-4 py-3 text-sm focus:outline-none placeholder-gray-400 text-gray-700 transition-all border-none"
+                placeholder="Enter ID (e.g. TCH-01)">
+            <button onclick="submitManual()"
+                class="neo-outset neo-button px-6 py-3 rounded-xl font-medium text-sm transition-all border-none hover:text-blue-800">Authorize</button>
+        </div>
+
+        <div id="status"
+            class="h-10 mt-2 rounded-xl flex items-center justify-center font-medium text-sm tracking-wide text-gray-500 transition-colors neo-inset">
+            Awaiting Scan</div>
+    </div>
+
+    <script>
+        // REPLACE THIS URL with your deployed Apps Script Web App URL
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec';
+        let isProcessing = false;
+
+        async function handleResult(id) {
+            if (!id || isProcessing) return;
+            isProcessing = true;
+
+            const statusEl = document.getElementById('status');
+
+            statusEl.innerText = `Authenticating: ${id}...`;
+            statusEl.className = "h-10 mt-2 rounded-xl flex items-center justify-center font-medium text-sm tracking-wide text-blue-600 neo-inset";
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ teacherId: id.trim() })
+                });
+
+                const res = await response.json();
+
+                // Updated colors for light mode (darker text for better contrast)
+                const textClass = res.success ? 'text-green-600' : 'text-amber-600';
+                statusEl.innerText = res.message;
+                statusEl.className = `h-10 mt-2 rounded-xl flex items-center justify-center font-medium text-sm tracking-wide neo-inset ${textClass}`;
+
+            } catch (err) {
+                statusEl.innerText = "Connection failed. Please retry.";
+                statusEl.className = "h-10 mt-2 rounded-xl flex items-center justify-center font-medium text-sm tracking-wide text-red-600 neo-inset";
+            } finally {
+                setTimeout(() => {
+                    isProcessing = false;
+                    statusEl.innerText = "Awaiting Scan";
+                    statusEl.className = "h-10 mt-2 rounded-xl flex items-center justify-center font-medium text-sm tracking-wide text-gray-500 neo-inset";
+                }, 500);
+            }
+        }
+
+        function submitManual() {
+            const id = document.getElementById('manualId').value;
+            if (id) {
+                handleResult(id);
+                document.getElementById('manualId').value = '';
+            }
+        }
+
+        const scanner = new Html5QrcodeScanner("reader", {
+            fps: 60,
+            qrbox: { width: 250, height: 250 },
+            disableFlip: false
+        }, false);
+
+        scanner.render(decodedText => handleResult(decodedText));
+    </script>
+</body>
+
+</html>
