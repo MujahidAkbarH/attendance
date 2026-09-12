@@ -196,10 +196,11 @@
                 <input type="text" id="staffSearch" onkeyup="filterStaff()"
                     class="w-full border-2 border-slate-300 rounded-xl px-4 py-2 text-sm font-bold shadow-sm"
                     placeholder="Search staff...">
-                <button onclick="loadStaffList(true)" class="ml-2 bg-slate-200 p-2 rounded-lg"
+                <button onclick="loadStaffList(true)"
+                    class="ml-2 bg-slate-200 hover:bg-slate-300 p-2 rounded-lg transition-colors"
                     title="Force Sync">🔄</button>
             </div>
-            <div id="staff-loading" class="text-center font-bold text-slate-500 py-4"><span
+            <div id="staff-loading" class="text-center font-bold text-slate-500 py-4 hidden"><span
                     class="loader border-blue-600"></span> Syncing DB...</div>
             <div id="staff-container" class="flex flex-col gap-3 max-h-[55vh] overflow-y-auto pr-2"></div>
             <button onclick="nav('view-admin-dash')" class="text-sm font-bold text-slate-400 mt-2 text-center w-full">←
@@ -249,26 +250,13 @@
         const ADMIN_PIN = "7860";
 
         let currentRole = 'none';
-        let localStaffCache = null; // Performance Optimization: Caches data locally
+        let localStaffCache = null;
+        let staffFetchPromise = null;
 
         function nav(viewId, title = "Dashboard") {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             document.getElementById('sub-header').innerText = title;
-        }
-
-        // AUTH
-        function loginAdmin() {
-            if (document.getElementById('adminPin').value === ADMIN_PIN) {
-                currentRole = 'admin';
-                document.getElementById('adminPin').value = '';
-                nav('view-admin-dash', 'Admin Dashboard');
-            } else alert("Invalid PIN");
-        }
-
-        function logout() {
-            currentRole = 'none';
-            nav('view-home', 'Authentication');
         }
 
         async function apiCall(payload) {
@@ -280,7 +268,33 @@
             }
         }
 
-        // ADD / EDIT / DELETE STAFF
+        // BACKGROUND PRE-FETCH ENGINE
+        function fetchStaffData(force = false) {
+            if (!staffFetchPromise || force) {
+                staffFetchPromise = apiCall({ action: 'getStaff' }).then(res => {
+                    if (res.success) localStaffCache = res.staff;
+                    return res;
+                });
+            }
+            return staffFetchPromise;
+        }
+
+        function loginAdmin() {
+            if (document.getElementById('adminPin').value === ADMIN_PIN) {
+                currentRole = 'admin';
+                document.getElementById('adminPin').value = '';
+                nav('view-admin-dash', 'Admin Dashboard');
+                fetchStaffData(true); // Triggers silent 10-second backend load immediately
+            } else alert("Invalid PIN");
+        }
+
+        function logout() {
+            currentRole = 'none';
+            localStaffCache = null;
+            staffFetchPromise = null;
+            nav('view-home', 'Authentication');
+        }
+
         async function submitAddTeacher() {
             const name = document.getElementById('addName').value, fname = document.getElementById('addFName').value, dept = document.getElementById('addDept').value;
             if (!name || !dept) return alert("Name and Department are required!");
@@ -293,7 +307,7 @@
 
             if (res.success) {
                 msg.innerHTML = `<span class="text-emerald-600">✔ ${res.message}</span>`;
-                if (localStaffCache) localStaffCache.push(res.staffData); // Optimistic UI Update
+                if (localStaffCache) localStaffCache.push(res.staffData);
                 setTimeout(() => { document.getElementById('addName').value = ''; document.getElementById('addFName').value = ''; document.getElementById('addDept').value = ''; msg.innerHTML = ''; nav('view-admin-dash'); }, 1500);
             } else msg.innerHTML = `<span class="text-red-600">✖ ${res.message}</span>`;
         }
@@ -332,15 +346,12 @@
             if (!confirm(`Mark ${id} as Left? They will not be able to mark attendance.`)) return;
             btnElement.innerText = "...";
 
-            // Optimistic UI Update for instant feedback
             const idx = localStaffCache.findIndex(s => s.id === id);
             if (idx !== -1) localStaffCache[idx].status = 'Left';
             renderStaffList(localStaffCache);
-
-            apiCall({ action: 'deleteTeacher', teacherId: id }); // Fire and forget to background
+            apiCall({ action: 'deleteTeacher', teacherId: id });
         }
 
-        // LIST RENDERING (CACHED)
         async function loadStaffList(forceSync = false) {
             nav('view-staff-list', 'Manage Staff');
             document.getElementById('staffSearch').value = '';
@@ -352,13 +363,11 @@
 
             document.getElementById('staff-container').innerHTML = '';
             document.getElementById('staff-loading').classList.remove('hidden');
-            const res = await apiCall({ action: 'getStaff' });
-            document.getElementById('staff-loading').classList.add('hidden');
 
-            if (res.success) {
-                localStaffCache = res.staff;
-                renderStaffList(localStaffCache);
-            }
+            const res = await fetchStaffData(forceSync);
+
+            document.getElementById('staff-loading').classList.add('hidden');
+            if (res.success) renderStaffList(localStaffCache);
         }
 
         function renderStaffList(staffArray) {
@@ -390,7 +399,6 @@
             renderStaffList(filtered);
         }
 
-        // REVIEWS
         function checkReviewEndUser() {
             const id = document.getElementById('teacherReviewId').value;
             if (!id) return;
@@ -435,7 +443,6 @@
             else nav('view-home', 'Authentication');
         }
 
-        // SCANNER ENGINE
         let html5QrCode, currentFacingMode = "environment";
         const scanCooldowns = new Map();
         document.addEventListener("DOMContentLoaded", () => { html5QrCode = new Html5Qrcode("reader"); });
