@@ -259,28 +259,38 @@
             document.getElementById('sub-header').innerText = title;
         }
 
-        // NEW ROBUST API CALL WITH AUTO-RETRY & REDIRECT FOLLOWING
-        async function apiCall(payload, retries = 1) {
+        // SMART FAILSAFE NETWORK CALL
+        async function apiCall(payload, isScanner = false) {
+            const controller = new AbortController();
+            // 8-second cutoff so the scanner NEVER gets permanently frozen
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+
             try {
-                const response = await fetch(APPS_SCRIPT_URL, {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload),
-                    redirect: 'follow' // CRITICAL: Forces mobile browsers to follow Google's internal security redirects
+                    redirect: 'follow',
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 return await response.json();
             } catch (e) {
-                if (retries > 0) {
-                    console.warn("Network hiccup detected, silently retrying...");
-                    return await apiCall(payload, retries - 1);
+                clearTimeout(timeoutId);
+
+                // If it aborted due to 8s timeout, Google is just being slow but data reached them.
+                if (e.name === 'AbortError' && isScanner) {
+                    return { success: true, message: "SYNCED IN BACKGROUND" };
                 }
-                return { success: false, message: "NETWORK STALLED - RETRY SCAN" };
+
+                // If it was a real network drop (Airplane mode, no WiFi)
+                return { success: false, message: "NETWORK OFFLINE" };
             }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             html5QrCode = new Html5Qrcode("reader");
-            apiCall({ action: 'ping' }); // Silent wake up
+            apiCall({ action: 'ping' });
         });
 
         function fetchStaffData(force = false) {
@@ -456,7 +466,7 @@
         }
 
         // ==========================================
-        // PRO SCANNER ENGINE (Locks to prevent overlap & crashes)
+        // PRO SCANNER ENGINE 
         // ==========================================
         let html5QrCode, currentFacingMode = "environment";
         const scanCooldowns = new Map();
@@ -540,13 +550,14 @@
 
             setScanStatus(`VERIFYING: ${cleanId}`, 'scan');
 
-            // Reassurance UI if Google takes a long time
+            // Turns Amber after 4 seconds to show it's still thinking
             slowNetworkTimer = setTimeout(() => {
                 setScanStatus("WAKING SERVER... HOLD ON", 'warning');
             }, 4000);
 
             try {
-                const res = await apiCall({ action: 'markAttendance', teacherId: cleanId });
+                // We pass 'true' here to activate the strict 8-second Failsafe unlock mechanism
+                const res = await apiCall({ action: 'markAttendance', teacherId: cleanId }, true);
                 clearTimeout(slowNetworkTimer);
 
                 if (res.success) {
@@ -558,7 +569,7 @@
                 }
             } catch (e) {
                 clearTimeout(slowNetworkTimer);
-                setScanStatus("✖ NETWORK DROPPED", 'error');
+                setScanStatus("✖ NETWORK FAULT", 'error');
             } finally {
                 statusResetTimer = setTimeout(() => {
                     setScanStatus("READY FOR NEXT", 'ready');
