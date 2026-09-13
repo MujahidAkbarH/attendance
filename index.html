@@ -259,22 +259,17 @@
             document.getElementById('sub-header').innerText = title;
         }
 
-        // NEW: Robust Network Request with 12-second Timeout to prevent permanent freezing
+        // REMOVED ARTIFICIAL TIMEOUT - Let Google take as much time as it needs
         async function apiCall(payload) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 12000);
             try {
                 const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
+                    body: JSON.stringify(payload)
                 });
-                clearTimeout(timeoutId);
                 return await response.json();
             } catch (e) {
-                clearTimeout(timeoutId);
-                return { success: false, message: "Network Dropped or Timeout" };
+                return { success: false, message: "Network Dropped / Retrying..." };
             }
         }
 
@@ -492,7 +487,6 @@
 
             try {
                 if (html5QrCode) {
-                    // Robust safety checks before halting camera
                     const state = html5QrCode.getState();
                     if (state === 3) html5QrCode.resume();
                     if (state === 2 || state === 3) html5QrCode.stop().catch(e => { });
@@ -528,10 +522,9 @@
             isProcessingScan = true;
             scanCooldowns.set(cleanId, now);
 
-            // THE FIX: Soft-pause the barcode reader logic, but strictly keep the video live to prevent crashes.
             try {
                 if (html5QrCode && (html5QrCode.getState() === 2)) {
-                    html5QrCode.pause(); // Using empty parameter allows video stream to flow untouched
+                    html5QrCode.pause();
                 }
             } catch (e) { }
 
@@ -543,6 +536,7 @@
             setScanStatus(`VERIFYING: ${cleanId}`, 'scan');
 
             try {
+                // Await the API call without cutting it off forcefully. Let Google take its time.
                 const res = await apiCall({ action: 'markAttendance', teacherId: cleanId });
 
                 if (res.success) {
@@ -555,7 +549,6 @@
             } catch (e) {
                 setScanStatus("✖ NETWORK DROPPED / ERROR", 'error');
             } finally {
-                // Clear the state regardless of success or failure to avoid permanent lockouts
                 statusResetTimer = setTimeout(() => {
                     setScanStatus("READY FOR NEXT", 'ready');
                     isProcessingScan = false;
