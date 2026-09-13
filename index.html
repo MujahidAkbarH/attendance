@@ -259,32 +259,18 @@
             document.getElementById('sub-header').innerText = title;
         }
 
-        // SMART FAILSAFE NETWORK CALL
-        async function apiCall(payload, isScanner = false) {
-            const controller = new AbortController();
-            // 8-second cutoff so the scanner NEVER gets permanently frozen
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-
+        // THE FIX: Removed the artificial hang-up timer entirely. Let Google take its time.
+        async function apiCall(payload) {
             try {
                 const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload),
-                    redirect: 'follow',
-                    signal: controller.signal
+                    redirect: 'follow'
                 });
-                clearTimeout(timeoutId);
                 return await response.json();
             } catch (e) {
-                clearTimeout(timeoutId);
-
-                // If it aborted due to 8s timeout, Google is just being slow but data reached them.
-                if (e.name === 'AbortError' && isScanner) {
-                    return { success: true, message: "SYNCED IN BACKGROUND" };
-                }
-
-                // If it was a real network drop (Airplane mode, no WiFi)
-                return { success: false, message: "NETWORK OFFLINE" };
+                return { success: false, message: "NETWORK OFFLINE OR DROPPED" };
             }
         }
 
@@ -550,14 +536,15 @@
 
             setScanStatus(`VERIFYING: ${cleanId}`, 'scan');
 
-            // Turns Amber after 4 seconds to show it's still thinking
+            // Still show the warning so the user knows the app isn't frozen, 
+            // but it will no longer force a fake success message
             slowNetworkTimer = setTimeout(() => {
-                setScanStatus("WAKING SERVER... HOLD ON", 'warning');
+                setScanStatus("SYNCING... PLEASE WAIT", 'warning');
             }, 4000);
 
             try {
-                // We pass 'true' here to activate the strict 8-second Failsafe unlock mechanism
-                const res = await apiCall({ action: 'markAttendance', teacherId: cleanId }, true);
+                // Will wait as long as Google takes to respond
+                const res = await apiCall({ action: 'markAttendance', teacherId: cleanId });
                 clearTimeout(slowNetworkTimer);
 
                 if (res.success) {
@@ -569,7 +556,7 @@
                 }
             } catch (e) {
                 clearTimeout(slowNetworkTimer);
-                setScanStatus("✖ NETWORK FAULT", 'error');
+                setScanStatus("✖ NETWORK DROPPED", 'error');
             } finally {
                 statusResetTimer = setTimeout(() => {
                     setScanStatus("READY FOR NEXT", 'ready');
