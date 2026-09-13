@@ -259,12 +259,22 @@
             document.getElementById('sub-header').innerText = title;
         }
 
+        // NEW: Robust Network Request with 12-second Timeout to prevent permanent freezing
         async function apiCall(payload) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
             try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
                 return await response.json();
             } catch (e) {
-                return { success: false, message: "Network Error" };
+                clearTimeout(timeoutId);
+                return { success: false, message: "Network Dropped or Timeout" };
             }
         }
 
@@ -446,7 +456,7 @@
         }
 
         // ==========================================
-        // PRO SCANNER ENGINE (Locks to prevent overlap)
+        // PRO SCANNER ENGINE (Locks to prevent overlap & crashes)
         // ==========================================
         let html5QrCode, currentFacingMode = "environment";
         const scanCooldowns = new Map();
@@ -482,8 +492,10 @@
 
             try {
                 if (html5QrCode) {
-                    if (html5QrCode.getState() === 3) html5QrCode.resume(); // Must resume from pause before stopping
-                    html5QrCode.stop().catch(e => { });
+                    // Robust safety checks before halting camera
+                    const state = html5QrCode.getState();
+                    if (state === 3) html5QrCode.resume();
+                    if (state === 2 || state === 3) html5QrCode.stop().catch(e => { });
                 }
             } catch (e) { }
 
@@ -492,10 +504,17 @@
 
         function switchCamera() {
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.getState() === 3)) {
-                if (html5QrCode.getState() === 3) html5QrCode.resume();
-                html5QrCode.stop().then(() => setTimeout(() => startScanner(), 150));
-            }
+            try {
+                if (html5QrCode) {
+                    const state = html5QrCode.getState();
+                    if (state === 3) html5QrCode.resume();
+                    if (state === 2 || state === 3) {
+                        html5QrCode.stop().then(() => setTimeout(() => startScanner(), 150));
+                    } else {
+                        startScanner();
+                    }
+                }
+            } catch (e) { }
         }
 
         async function handleScanResult(id) {
@@ -509,10 +528,10 @@
             isProcessingScan = true;
             scanCooldowns.set(cleanId, now);
 
-            // THE FIX: Instantly pause the scanning engine to prevent callbacks. Video stays live!
+            // THE FIX: Soft-pause the barcode reader logic, but strictly keep the video live to prevent crashes.
             try {
                 if (html5QrCode && (html5QrCode.getState() === 2)) {
-                    html5QrCode.pause(true);
+                    html5QrCode.pause(); // Using empty parameter allows video stream to flow untouched
                 }
             } catch (e) { }
 
@@ -534,13 +553,13 @@
                     if (navigator.vibrate) navigator.vibrate(200);
                 }
             } catch (e) {
-                setScanStatus("✖ NETWORK ERROR", 'error');
+                setScanStatus("✖ NETWORK DROPPED / ERROR", 'error');
             } finally {
+                // Clear the state regardless of success or failure to avoid permanent lockouts
                 statusResetTimer = setTimeout(() => {
                     setScanStatus("READY FOR NEXT", 'ready');
                     isProcessingScan = false;
 
-                    // THE FIX: Resume scanning instantly without restarting the camera hardware
                     try {
                         if (html5QrCode && html5QrCode.getState() === 3) {
                             html5QrCode.resume();
