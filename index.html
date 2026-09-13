@@ -83,7 +83,7 @@
                 <input type="text" id="teacherReviewId"
                     class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-blue-500 font-bold uppercase shadow-sm"
                     placeholder="e.g. SKPP-01">
-                <button onclick="checkReviewEndUser()"
+                <button onclick="checkReviewEndUser(event)"
                     class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white py-3 rounded-xl font-bold transition-all shadow-md">Check
                     My Attendance</button>
             </div>
@@ -261,14 +261,18 @@
 
         async function apiCall(payload) {
             try {
-                const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 return await response.json();
             } catch (e) {
                 return { success: false, message: "Network Error" };
             }
         }
 
-        // BACKGROUND PRE-FETCH ENGINE
+        document.addEventListener("DOMContentLoaded", () => {
+            html5QrCode = new Html5Qrcode("reader");
+            fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', { method: 'POST', body: JSON.stringify({ action: 'ping' }) }).catch(e => console.log("Ping failed"));
+        });
+
         function fetchStaffData(force = false) {
             if (!staffFetchPromise || force) {
                 staffFetchPromise = apiCall({ action: 'getStaff' }).then(res => {
@@ -298,13 +302,10 @@
         async function submitAddTeacher() {
             const name = document.getElementById('addName').value, fname = document.getElementById('addFName').value, dept = document.getElementById('addDept').value;
             if (!name || !dept) return alert("Name and Department are required!");
-
             const btn = document.getElementById('addBtn'), msg = document.getElementById('add-msg');
             btn.innerHTML = '<span class="loader border-white"></span> Registering...';
-
             const res = await apiCall({ action: 'addTeacher', data: { name, fname, dept } });
             btn.innerHTML = 'Register Staff';
-
             if (res.success) {
                 msg.innerHTML = `<span class="text-emerald-600">✔ ${res.message}</span>`;
                 if (localStaffCache) localStaffCache.push(res.staffData);
@@ -328,10 +329,8 @@
             const id = document.getElementById('editId').value, name = document.getElementById('editName').value, fname = document.getElementById('editFName').value, dept = document.getElementById('editDept').value;
             const btn = document.getElementById('editBtn'), msg = document.getElementById('edit-msg');
             btn.innerHTML = '<span class="loader border-white"></span> Saving...';
-
             const res = await apiCall({ action: 'editTeacher', data: { id, name, fname, dept } });
             btn.innerHTML = 'Save Changes';
-
             if (res.success) {
                 msg.innerHTML = `<span class="text-emerald-600">✔ ${res.message}</span>`;
                 if (localStaffCache) {
@@ -345,7 +344,6 @@
         async function deleteStaff(id, btnElement) {
             if (!confirm(`Mark ${id} as Left? They will not be able to mark attendance.`)) return;
             btnElement.innerText = "...";
-
             const idx = localStaffCache.findIndex(s => s.id === id);
             if (idx !== -1) localStaffCache[idx].status = 'Left';
             renderStaffList(localStaffCache);
@@ -355,17 +353,13 @@
         async function loadStaffList(forceSync = false) {
             nav('view-staff-list', 'Manage Staff');
             document.getElementById('staffSearch').value = '';
-
             if (localStaffCache && !forceSync) {
                 renderStaffList(localStaffCache);
                 return;
             }
-
             document.getElementById('staff-container').innerHTML = '';
             document.getElementById('staff-loading').classList.remove('hidden');
-
             const res = await fetchStaffData(forceSync);
-
             document.getElementById('staff-loading').classList.add('hidden');
             if (res.success) renderStaffList(localStaffCache);
         }
@@ -399,17 +393,24 @@
             renderStaffList(filtered);
         }
 
-        function checkReviewEndUser() {
+        async function checkReviewEndUser(event) {
             const id = document.getElementById('teacherReviewId').value;
             if (!id) return;
+
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerHTML = '<span class="loader border-white"></span> Waking Database...';
+
             currentRole = 'enduser';
-            triggerReview(id);
+            await triggerReview(id);
+
+            btn.innerHTML = originalText;
             document.getElementById('teacherReviewId').value = '';
         }
 
         async function triggerReview(id) {
             nav('view-review', `Review: ${id}`);
-            document.getElementById('rev-name').innerText = "Fetching data...";
+            document.getElementById('rev-name').innerHTML = '<span class="loader border-blue-900"></span> Retrieving Data...';
             document.getElementById('rev-dept').innerText = "";
             document.getElementById('rev-month').innerText = "Attendance for: ...";
             document.getElementById('rev-total').innerText = "-";
@@ -444,22 +445,18 @@
             else nav('view-home', 'Authentication');
         }
 
-
-        // =======================================================
-        // FIX 2: SCANNER ENGINE (Locks & Timeout Fixes)
-        // =======================================================
+        // ==========================================
+        // PRO SCANNER ENGINE (Locks to prevent overlap)
+        // ==========================================
         let html5QrCode, currentFacingMode = "environment";
         const scanCooldowns = new Map();
-        let isProcessingScan = false; // Prevents multiple requests from firing at once
-        let statusResetTimer = null;  // Prevents UI messages from overlapping
-
-        document.addEventListener("DOMContentLoaded", () => { html5QrCode = new Html5Qrcode("reader"); });
+        let isProcessingScan = false;
+        let statusResetTimer = null;
 
         function setScanStatus(text, type) {
             const el = document.getElementById('scan-status');
             el.innerText = text;
 
-            // Clear the reset timer if a new scan happens so messages don't vanish instantly
             if (statusResetTimer) clearTimeout(statusResetTimer);
 
             const base = "h-14 rounded-xl flex items-center justify-center font-bold text-sm tracking-wide px-4 text-center border transition-colors duration-300 ";
@@ -482,24 +479,42 @@
             document.getElementById('reader-container').classList.add('hidden');
             document.getElementById('camera-controls').classList.add('hidden');
             setScanStatus("SYSTEM STANDBY", 'ready');
-            if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop().catch(e => { });
+
+            try {
+                if (html5QrCode) {
+                    if (html5QrCode.getState() === 3) html5QrCode.resume(); // Must resume from pause before stopping
+                    html5QrCode.stop().catch(e => { });
+                }
+            } catch (e) { }
+
+            isProcessingScan = false;
         }
 
         function switchCamera() {
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop().then(() => setTimeout(() => startScanner(), 150));
+            if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.getState() === 3)) {
+                if (html5QrCode.getState() === 3) html5QrCode.resume();
+                html5QrCode.stop().then(() => setTimeout(() => startScanner(), 150));
+            }
         }
 
         async function handleScanResult(id) {
+            if (isProcessingScan) return;
+
             const cleanId = id.toUpperCase().trim();
             const now = Date.now();
 
-            // RACING CONDITION FIX: Reject if currently processing an API call or scanned recently
-            if (isProcessingScan) return;
             if (scanCooldowns.get(cleanId) && (now - scanCooldowns.get(cleanId)) < 4000) return;
 
+            isProcessingScan = true;
             scanCooldowns.set(cleanId, now);
-            isProcessingScan = true; // Lock the scanner
+
+            // THE FIX: Instantly pause the scanning engine to prevent callbacks. Video stays live!
+            try {
+                if (html5QrCode && (html5QrCode.getState() === 2)) {
+                    html5QrCode.pause(true);
+                }
+            } catch (e) { }
 
             const container = document.getElementById('reader-container');
             container.classList.add('scan-highlight');
@@ -521,8 +536,18 @@
             } catch (e) {
                 setScanStatus("✖ NETWORK ERROR", 'error');
             } finally {
-                isProcessingScan = false; // Unlock the scanner
-                statusResetTimer = setTimeout(() => setScanStatus("READY FOR NEXT", 'ready'), 3000);
+                statusResetTimer = setTimeout(() => {
+                    setScanStatus("READY FOR NEXT", 'ready');
+                    isProcessingScan = false;
+
+                    // THE FIX: Resume scanning instantly without restarting the camera hardware
+                    try {
+                        if (html5QrCode && html5QrCode.getState() === 3) {
+                            html5QrCode.resume();
+                        }
+                    } catch (e) { }
+
+                }, 2500);
             }
         }
 
