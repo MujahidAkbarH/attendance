@@ -103,6 +103,8 @@
                     class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold transition-all shadow-md">Enter
                     Dashboard</button>
             </div>
+            <div class="text-center text-[10px] font-bold text-slate-300 tracking-widest mt-2">v2.5 - Dynamic Logic
+                Engine</div>
         </div>
 
         <!-- ADMIN DASHBOARD -->
@@ -111,13 +113,19 @@
                 class="bg-blue-600 hover:bg-blue-700 text-white p-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-md transition-all text-lg">
                 📷 Launch Scanner
             </button>
-            <button onclick="nav('view-add-teacher')"
-                class="bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-700 p-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all">
-                ➕ Add New Teacher
-            </button>
-            <button onclick="loadStaffList()"
-                class="bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-700 p-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all">
-                👥 Manage Staff & Reviews
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="nav('view-add-teacher')"
+                    class="bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-700 p-4 rounded-xl font-bold flex flex-col items-center justify-center gap-1 transition-all text-sm">
+                    <span class="text-xl">➕</span> Add Staff
+                </button>
+                <button onclick="loadStaffList()"
+                    class="bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-700 p-4 rounded-xl font-bold flex flex-col items-center justify-center gap-1 transition-all text-sm">
+                    <span class="text-xl">👥</span> Staff List
+                </button>
+            </div>
+            <button onclick="generateMonthlyReport(event)"
+                class="bg-slate-800 hover:bg-slate-900 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-md">
+                📊 Generate Monthly Report
             </button>
             <button onclick="logout()"
                 class="mt-4 text-xs font-bold text-red-500 tracking-widest uppercase text-center w-full">
@@ -157,34 +165,52 @@
         </div>
 
         <!-- ADD TEACHER -->
-        <div id="view-add-teacher" class="view gap-4">
+        <div id="view-add-teacher" class="view gap-3">
             <input type="text" id="addName" class="border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
                 placeholder="Teacher Name">
             <input type="text" id="addFName" class="border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
                 placeholder="Father Name">
-            <input type="text" id="addDept" class="border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
-                placeholder="Department">
+            <div class="flex gap-3">
+                <input type="text" id="addDept" class="w-1/2 border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
+                    placeholder="Dept">
+                <div
+                    class="w-1/2 flex flex-col bg-slate-50 border-2 border-slate-300 rounded-xl px-3 py-1 justify-center relative">
+                    <label
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-widest absolute top-1 left-3">Max
+                        Arrival</label>
+                    <input type="time" id="addMaxTime" value="08:00"
+                        class="bg-transparent font-bold text-base mt-3 focus:outline-none w-full">
+                </div>
+            </div>
             <button id="addBtn" onclick="submitAddTeacher()"
-                class="bg-blue-600 text-white py-4 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">Register
-                Staff</button>
+                class="bg-blue-600 text-white py-4 rounded-xl font-bold shadow-md mt-2">Register Staff</button>
             <div id="add-msg" class="text-center font-bold text-sm h-6"></div>
             <button onclick="nav('view-admin-dash')" class="text-sm font-bold text-slate-400 text-center w-full">← Back
                 to Dash</button>
         </div>
 
         <!-- EDIT TEACHER -->
-        <div id="view-edit-teacher" class="view gap-4">
+        <div id="view-edit-teacher" class="view gap-3">
             <input type="hidden" id="editId">
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1" id="editDisplayId">ID: </div>
             <input type="text" id="editName" class="border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
                 placeholder="Teacher Name">
             <input type="text" id="editFName" class="border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
                 placeholder="Father Name">
-            <input type="text" id="editDept" class="border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
-                placeholder="Department">
+            <div class="flex gap-3">
+                <input type="text" id="editDept" class="w-1/2 border-2 border-slate-300 rounded-xl px-4 py-3 font-bold"
+                    placeholder="Dept">
+                <div
+                    class="w-1/2 flex flex-col bg-slate-50 border-2 border-slate-300 rounded-xl px-3 py-1 justify-center relative">
+                    <label
+                        class="text-[10px] font-bold text-slate-500 uppercase tracking-widest absolute top-1 left-3">Max
+                        Arrival</label>
+                    <input type="time" id="editMaxTime"
+                        class="bg-transparent font-bold text-base mt-3 focus:outline-none w-full">
+                </div>
+            </div>
             <button id="editBtn" onclick="submitEditTeacher()"
-                class="bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">Save
-                Changes</button>
+                class="bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-md mt-2">Save Changes</button>
             <div id="edit-msg" class="text-center font-bold text-sm h-6"></div>
             <button onclick="nav('view-staff-list', 'Manage Staff')"
                 class="text-sm font-bold text-slate-400 text-center w-full">← Back to Staff List</button>
@@ -207,40 +233,69 @@
                 Back to Dash</button>
         </div>
 
-        <!-- ATTENDANCE REVIEW -->
-        <div id="view-review" class="view gap-5">
-            <div class="text-center">
+        <!-- FULL MONTHLY REPORT DASHBOARD -->
+        <div id="view-monthly-report" class="view gap-4">
+            <div class="flex flex-col items-center bg-blue-50 border border-blue-200 p-3 rounded-xl relative">
+                <span class="text-lg font-black text-blue-900" id="report-month-title">Month Year</span>
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1" id="report-days-title">0
+                    Total Working Days</span>
+                <button onclick="nav('view-admin-dash')"
+                    class="text-xs font-bold text-slate-500 hover:text-slate-800 bg-white px-3 py-1 border rounded-lg shadow-sm absolute top-3 right-3">Close</button>
+            </div>
+
+            <div id="report-container" class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+
+            <div class="text-[10px] text-center font-bold text-slate-400 mt-2 leading-relaxed">
+                * 1 Free Leave applies to Absent Days only.<br>
+                * 3 Lates = 1 Penalty Absence (cannot be forgiven).
+            </div>
+        </div>
+
+        <!-- INDIVIDUAL ATTENDANCE REVIEW -->
+        <div id="view-review" class="view gap-4">
+            <div class="text-center relative">
                 <h2 id="rev-name" class="text-xl font-extrabold text-blue-900">Loading...</h2>
                 <p id="rev-dept" class="text-xs font-bold text-slate-500 uppercase mt-1">...</p>
-                <div class="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full mt-2 uppercase tracking-wide"
-                    id="rev-month">Attendance for: ...</div>
+                <div class="mt-2 inline-block bg-slate-100 border border-slate-200 px-3 py-1 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-widest"
+                    id="rev-month-display">...</div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 mt-2">
                 <div
-                    class="bg-slate-100 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center">
-                    <span class="text-[2.5rem] font-black text-slate-700 leading-none" id="rev-total">0</span>
-                    <span class="text-[0.65rem] font-bold text-slate-500 uppercase tracking-widest mt-1">Total
-                        Days</span>
+                    class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex justify-between items-center shadow-sm">
+                    <span class="text-xs font-bold text-emerald-700 uppercase">Present</span>
+                    <span class="text-xl font-black text-emerald-600" id="rev-present">0</span>
                 </div>
-                <div class="flex flex-col gap-3">
-                    <div
-                        class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
-                        <span class="text-xs font-bold text-emerald-700 uppercase">Present</span>
-                        <span class="text-xl font-black text-emerald-600" id="rev-present">0</span>
-                    </div>
-                    <div
-                        class="bg-red-50 border border-red-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
-                        <span class="text-xs font-bold text-red-700 uppercase">Absent</span>
-                        <span class="text-xl font-black text-red-600" id="rev-absent">0</span>
-                    </div>
+                <div
+                    class="bg-amber-50 border border-amber-100 rounded-xl p-3 flex justify-between items-center shadow-sm">
+                    <span class="text-xs font-bold text-amber-700 uppercase">Late</span>
+                    <span class="text-xl font-black text-amber-600" id="rev-late">0</span>
                 </div>
             </div>
 
-            <div id="rev-status-box" class="text-center font-bold text-xs uppercase tracking-wider py-2 rounded-lg">
+            <div class="mt-2 bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col gap-2">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                    <span>Absent Days:</span>
+                    <span id="rev-empty" class="text-slate-700 text-sm">0</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                    <span>- 1 Free Leave =</span>
+                    <span id="rev-billable" class="text-slate-700 text-sm">0</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                    <span>+ Late Penalties:</span>
+                    <span id="rev-penalty" class="text-amber-600 text-sm">0</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 mt-1 border-t border-slate-200">
+                    <span class="text-xs font-bold text-red-500 uppercase tracking-widest">Final Absences:</span>
+                    <span class="text-lg font-black text-red-600" id="rev-final">0</span>
+                </div>
             </div>
-            <button onclick="closeReview()" class="bg-slate-800 text-white py-3 rounded-xl font-bold mt-2">Close
-                Review</button>
+
+            <div id="rev-status-box"
+                class="text-center font-bold text-xs uppercase tracking-wider py-2 rounded-lg mt-1"></div>
+            <button onclick="closeReview()"
+                class="bg-slate-800 text-white py-3 rounded-xl font-bold mt-2 shadow-md">Close Screen</button>
         </div>
 
     </div>
@@ -259,7 +314,6 @@
             document.getElementById('sub-header').innerText = title;
         }
 
-        // THE FIX: Removed the artificial hang-up timer entirely. Let Google take its time.
         async function apiCall(payload) {
             try {
                 const response = await fetch('https://script.google.com/macros/s/AKfycbxdzOJceHv9DGzxYhfpmjU9jWN-b5H2aQ-7GoHtWrGmpkOcNHkNuma1rCHftwqDvDME/exec', {
@@ -270,7 +324,7 @@
                 });
                 return await response.json();
             } catch (e) {
-                return { success: false, message: "NETWORK OFFLINE OR DROPPED" };
+                return { success: false, message: "NETWORK ERROR" };
             }
         }
 
@@ -306,11 +360,11 @@
         }
 
         async function submitAddTeacher() {
-            const name = document.getElementById('addName').value, fname = document.getElementById('addFName').value, dept = document.getElementById('addDept').value;
+            const name = document.getElementById('addName').value, fname = document.getElementById('addFName').value, dept = document.getElementById('addDept').value, maxTime = document.getElementById('addMaxTime').value;
             if (!name || !dept) return alert("Name and Department are required!");
             const btn = document.getElementById('addBtn'), msg = document.getElementById('add-msg');
-            btn.innerHTML = '<span class="loader border-white"></span> Registering...';
-            const res = await apiCall({ action: 'addTeacher', data: { name, fname, dept } });
+            btn.innerHTML = '<span class="loader border-white"></span> Processing...';
+            const res = await apiCall({ action: 'addTeacher', data: { name, fname, dept, maxTime } });
             btn.innerHTML = 'Register Staff';
             if (res.success) {
                 msg.innerHTML = `<span class="text-emerald-600">✔ ${res.message}</span>`;
@@ -327,21 +381,22 @@
             document.getElementById('editName').value = t.name;
             document.getElementById('editFName').value = t.fname;
             document.getElementById('editDept').value = t.dept;
+            document.getElementById('editMaxTime').value = t.maxTime || "08:00";
             document.getElementById('edit-msg').innerHTML = '';
             nav('view-edit-teacher', 'Edit Staff');
         }
 
         async function submitEditTeacher() {
-            const id = document.getElementById('editId').value, name = document.getElementById('editName').value, fname = document.getElementById('editFName').value, dept = document.getElementById('editDept').value;
+            const id = document.getElementById('editId').value, name = document.getElementById('editName').value, fname = document.getElementById('editFName').value, dept = document.getElementById('editDept').value, maxTime = document.getElementById('editMaxTime').value;
             const btn = document.getElementById('editBtn'), msg = document.getElementById('edit-msg');
             btn.innerHTML = '<span class="loader border-white"></span> Saving...';
-            const res = await apiCall({ action: 'editTeacher', data: { id, name, fname, dept } });
+            const res = await apiCall({ action: 'editTeacher', data: { id, name, fname, dept, maxTime } });
             btn.innerHTML = 'Save Changes';
             if (res.success) {
                 msg.innerHTML = `<span class="text-emerald-600">✔ ${res.message}</span>`;
                 if (localStaffCache) {
                     const idx = localStaffCache.findIndex(s => s.id === id);
-                    if (idx !== -1) localStaffCache[idx] = { ...localStaffCache[idx], name, fname, dept };
+                    if (idx !== -1) localStaffCache[idx] = { ...localStaffCache[idx], name, fname, dept, maxTime };
                 }
                 setTimeout(() => loadStaffList(), 1000);
             } else msg.innerHTML = `<span class="text-red-600">✖ ${res.message}</span>`;
@@ -350,12 +405,14 @@
         async function deleteStaff(id, btnElement) {
             if (!confirm(`Mark ${id} as Left? They will not be able to mark attendance.`)) return;
             btnElement.innerText = "...";
-            const idx = localStaffCache.findIndex(s => s.id === id);
+            const cleanId = id.toString().trim().toUpperCase();
+            const idx = localStaffCache.findIndex(s => s.id.toString().trim().toUpperCase() === cleanId);
             if (idx !== -1) localStaffCache[idx].status = 'Left';
             renderStaffList(localStaffCache);
-            apiCall({ action: 'deleteTeacher', teacherId: id });
+            apiCall({ action: 'deleteTeacher', teacherId: cleanId });
         }
 
+        // UPDATED WITH NETWORK DROP FALLBACK UI
         async function loadStaffList(forceSync = false) {
             nav('view-staff-list', 'Manage Staff');
             document.getElementById('staffSearch').value = '';
@@ -365,9 +422,21 @@
             }
             document.getElementById('staff-container').innerHTML = '';
             document.getElementById('staff-loading').classList.remove('hidden');
+
             const res = await fetchStaffData(forceSync);
             document.getElementById('staff-loading').classList.add('hidden');
-            if (res.success) renderStaffList(localStaffCache);
+
+            if (res.success) {
+                renderStaffList(localStaffCache);
+            } else {
+                document.getElementById('staff-container').innerHTML = `
+          <div class="text-center p-6 border-2 border-red-200 bg-red-50 rounded-xl mt-4">
+            <span class="text-3xl">📡</span><br>
+            <span class="text-sm font-bold text-red-600 mt-2 block">Network Drop / DB Timeout</span><br>
+            <button onclick="loadStaffList(true)" class="mt-3 bg-red-600 text-white px-6 py-3 rounded-lg text-sm font-bold shadow-md">Try Again</button>
+          </div>
+        `;
+            }
         }
 
         function renderStaffList(staffArray) {
@@ -377,15 +446,24 @@
                 const isLeft = staff.status === 'Left';
                 const card = document.createElement('div');
                 card.className = `p-4 rounded-xl border ${isLeft ? 'bg-slate-100 border-slate-200 opacity-70' : 'bg-white border-slate-300 shadow-sm'} flex justify-between items-center transition-all`;
+
+                let formatTime = "08:00 AM";
+                if (staff.maxTime) {
+                    let [h, m] = staff.maxTime.split(':');
+                    let ampm = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12 || 12;
+                    formatTime = `${h}:${m} ${ampm}`;
+                }
+
                 card.innerHTML = `
           <div class="flex-1">
             <p class="font-bold text-slate-800">${staff.name} <span class="text-xs text-blue-600 ml-1">(${staff.id})</span></p>
-            <p class="text-xs font-semibold text-slate-500 uppercase">${staff.dept}</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-wider">${staff.dept} | Max: <span class="text-slate-600">${formatTime}</span></p>
           </div>
           <div class="flex gap-2">
             <button onclick="triggerReview('${staff.id}')" class="p-2 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs shadow-sm">Review</button>
             ${!isLeft ? `<button onclick="openEditTeacher('${staff.id}')" class="p-2 bg-slate-100 text-slate-600 rounded-lg font-bold text-xs shadow-sm">Edit</button>` : ''}
-            ${!isLeft ? `<button onclick="deleteStaff('${staff.id}', this)" class="p-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs shadow-sm">Remove</button>` : `<span class="text-xs font-bold text-red-500 p-2 border border-red-200 rounded-lg bg-red-50">LEFT</span>`}
+            ${!isLeft ? `<button onclick="deleteStaff('${staff.id}', this)" class="p-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs shadow-sm">Remove</button>` : `<span class="text-[10px] font-bold text-red-500 p-2 border border-red-200 rounded-lg bg-red-50">LEFT</span>`}
           </div>
         `;
                 container.appendChild(card);
@@ -399,39 +477,98 @@
             renderStaffList(filtered);
         }
 
-        async function checkReviewEndUser(event) {
-            const id = document.getElementById('teacherReviewId').value;
-            if (!id) return;
+        // --- RE-DESIGNED MONTH-END ANALYTICS ---
+        async function generateMonthlyReport(event) {
+            const btn = event.target;
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span class="loader border-white mr-2"></span> Calculating...';
 
+            const res = await apiCall({ action: 'generateReport' });
+            btn.innerHTML = original;
+
+            if (res.success) {
+                nav('view-monthly-report', 'Monthly Analytics');
+                document.getElementById('report-month-title').innerText = res.month;
+                document.getElementById('report-days-title').innerText = `${res.totalDays} Total Working Days`;
+
+                const container = document.getElementById('report-container');
+                container.innerHTML = '';
+
+                res.report.forEach(staff => {
+                    const card = document.createElement('div');
+                    card.className = `p-4 rounded-xl border bg-white border-slate-300 shadow-sm flex flex-col`;
+                    card.innerHTML = `
+            <div class="border-b border-slate-100 pb-2 flex justify-between items-center">
+              <span class="font-bold text-blue-900">${staff.name} <span class="text-xs text-slate-400">(${staff.id})</span></span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-md">${staff.dept}</span>
+            </div>
+            
+            <div class="flex justify-between items-center mt-3 mb-1 px-1">
+              <span class="text-xs font-bold text-emerald-600">Present: ${staff.present}</span>
+              <span class="text-xs font-bold text-amber-600">Late: ${staff.late}</span>
+            </div>
+            
+            <div class="bg-slate-50 rounded-lg p-3 flex flex-col gap-2 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
+              <div class="flex justify-between items-center">
+                <span>Absent Days: <span class="text-slate-700 text-sm ml-1">${staff.empty}</span></span>
+                <span>- 1 Free Leave = <span class="text-slate-700 text-sm ml-1">${staff.billableEmpty}</span></span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span>+ Late Penalty:</span>
+                <span class="text-amber-600 text-sm">${staff.latePenalty}</span>
+              </div>
+              <div class="flex justify-between items-center pt-2 mt-1 border-t border-slate-200 text-red-600">
+                <span class="tracking-widest">Final Absences:</span>
+                <span class="text-lg font-black">${staff.finalDeductions}</span>
+              </div>
+            </div>
+          `;
+                    container.appendChild(card);
+                });
+            } else {
+                alert("Failed to generate report.");
+            }
+        }
+
+        // --- RE-DESIGNED INDIVIDUAL REVIEWS ---
+        async function checkReviewEndUser(event) {
+            const id = document.getElementById('teacherReviewId').value.trim();
+            if (!id) return;
             const btn = event.target;
             const originalText = btn.innerText;
             btn.innerHTML = '<span class="loader border-white"></span> Waking Database...';
-
             currentRole = 'enduser';
             await triggerReview(id);
-
             btn.innerHTML = originalText;
             document.getElementById('teacherReviewId').value = '';
         }
 
         async function triggerReview(id) {
             nav('view-review', `Review: ${id}`);
-            document.getElementById('rev-name').innerHTML = '<span class="loader border-blue-900"></span> Retrieving Data...';
+            document.getElementById('rev-name').innerHTML = '<span class="loader border-blue-900"></span> Retrieving...';
             document.getElementById('rev-dept').innerText = "";
-            document.getElementById('rev-month').innerText = "Attendance for: ...";
-            document.getElementById('rev-total').innerText = "-";
+            document.getElementById('rev-month-display').innerText = "Loading...";
             document.getElementById('rev-present').innerText = "-";
-            document.getElementById('rev-absent').innerText = "-";
+            document.getElementById('rev-late').innerText = "-";
+            document.getElementById('rev-empty').innerText = "-";
+            document.getElementById('rev-billable').innerText = "-";
+            document.getElementById('rev-penalty').innerText = "-";
+            document.getElementById('rev-final').innerText = "-";
             document.getElementById('rev-status-box').className = "hidden";
 
-            const res = await apiCall({ action: 'getReview', teacherId: id });
+            const cleanId = id.trim().toUpperCase();
+            const res = await apiCall({ action: 'getReview', teacherId: cleanId });
+
             if (res.success) {
                 document.getElementById('rev-name').innerText = res.stats.name;
                 document.getElementById('rev-dept').innerText = res.stats.dept;
-                document.getElementById('rev-month').innerText = "Attendance for: " + res.stats.month;
-                document.getElementById('rev-total').innerText = res.stats.totalDays;
+                document.getElementById('rev-month-display').innerText = `${res.stats.month} — ${res.stats.totalDays} Days Total`;
                 document.getElementById('rev-present').innerText = res.stats.present;
-                document.getElementById('rev-absent').innerText = res.stats.absent;
+                document.getElementById('rev-late').innerText = res.stats.late;
+                document.getElementById('rev-empty').innerText = res.stats.empty;
+                document.getElementById('rev-billable').innerText = res.stats.billableEmpty;
+                document.getElementById('rev-penalty').innerText = res.stats.latePenalty;
+                document.getElementById('rev-final').innerText = res.stats.finalDeductions;
 
                 const statBox = document.getElementById('rev-status-box');
                 if (res.stats.status === "Left") {
@@ -451,27 +588,22 @@
             else nav('view-home', 'Authentication');
         }
 
-        // ==========================================
-        // PRO SCANNER ENGINE 
-        // ==========================================
+        // --- SCANNER ENGINE ---
         let html5QrCode, currentFacingMode = "environment";
         const scanCooldowns = new Map();
         let isProcessingScan = false;
         let statusResetTimer = null;
-        let slowNetworkTimer = null;
 
         function setScanStatus(text, type) {
             const el = document.getElementById('scan-status');
             el.innerText = text;
-
             if (statusResetTimer) clearTimeout(statusResetTimer);
-
             const base = "h-14 rounded-xl flex items-center justify-center font-bold text-sm tracking-wide px-4 text-center border transition-colors duration-300 ";
             if (type === 'ready') el.className = base + "text-slate-600 bg-slate-100 border-slate-300";
             else if (type === 'scan') el.className = base + "text-blue-800 bg-blue-100 border-blue-300";
             else if (type === 'success') el.className = base + "text-emerald-800 bg-emerald-100 border-emerald-300";
             else if (type === 'warning') el.className = base + "text-amber-800 bg-amber-100 border-amber-300";
-            else el.className = base + "text-red-800 bg-red-100 border-red-300";
+            else if (type === 'error') el.className = base + "text-red-800 bg-red-100 border-red-300";
         }
 
         function startScanner() {
@@ -487,47 +619,25 @@
             document.getElementById('reader-container').classList.add('hidden');
             document.getElementById('camera-controls').classList.add('hidden');
             setScanStatus("SYSTEM STANDBY", 'ready');
-
-            try {
-                if (html5QrCode) {
-                    const state = html5QrCode.getState();
-                    if (state === 3) html5QrCode.resume();
-                    if (state === 2 || state === 3) html5QrCode.stop().catch(e => { });
-                }
-            } catch (e) { }
-
+            try { if (html5QrCode) { const state = html5QrCode.getState(); if (state === 3) html5QrCode.resume(); if (state === 2 || state === 3) html5QrCode.stop().catch(e => { }); } } catch (e) { }
             isProcessingScan = false;
         }
 
         function switchCamera() {
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            try {
-                if (html5QrCode) {
-                    const state = html5QrCode.getState();
-                    if (state === 3) html5QrCode.resume();
-                    if (state === 2 || state === 3) {
-                        html5QrCode.stop().then(() => setTimeout(() => startScanner(), 150));
-                    } else {
-                        startScanner();
-                    }
-                }
-            } catch (e) { }
+            try { if (html5QrCode) { const state = html5QrCode.getState(); if (state === 3) html5QrCode.resume(); if (state === 2 || state === 3) { html5QrCode.stop().then(() => setTimeout(() => startScanner(), 150)); } else { startScanner(); } } } catch (e) { }
         }
 
         async function handleScanResult(id) {
             if (isProcessingScan) return;
-
             const cleanId = id.toUpperCase().trim();
             const now = Date.now();
-
             if (scanCooldowns.get(cleanId) && (now - scanCooldowns.get(cleanId)) < 4000) return;
 
             isProcessingScan = true;
             scanCooldowns.set(cleanId, now);
 
-            try {
-                if (html5QrCode && (html5QrCode.getState() === 2)) html5QrCode.pause();
-            } catch (e) { }
+            try { if (html5QrCode && (html5QrCode.getState() === 2)) html5QrCode.pause(); } catch (e) { }
 
             const container = document.getElementById('reader-container');
             container.classList.add('scan-highlight');
@@ -536,39 +646,24 @@
 
             setScanStatus(`VERIFYING: ${cleanId}`, 'scan');
 
-            // Still show the warning so the user knows the app isn't frozen, 
-            // but it will no longer force a fake success message
-            slowNetworkTimer = setTimeout(() => {
-                setScanStatus("SYNCING... PLEASE WAIT", 'warning');
-            }, 4000);
-
             try {
-                // Will wait as long as Google takes to respond
                 const res = await apiCall({ action: 'markAttendance', teacherId: cleanId });
-                clearTimeout(slowNetworkTimer);
-
                 if (res.success) {
-                    setScanStatus(`✔ ${res.message.toUpperCase()}`, 'success');
+                    if (res.message.includes("Late")) setScanStatus(`⚠ ${res.message.toUpperCase()}`, 'warning');
+                    else setScanStatus(`✔ ${res.message.toUpperCase()}`, 'success');
                     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
                 } else {
                     setScanStatus(`⚠ ${res.message.toUpperCase()}`, 'error');
                     if (navigator.vibrate) navigator.vibrate(200);
                 }
             } catch (e) {
-                clearTimeout(slowNetworkTimer);
-                setScanStatus("✖ NETWORK DROPPED", 'error');
+                setScanStatus("✖ NETWORK ERROR", 'error');
             } finally {
                 statusResetTimer = setTimeout(() => {
                     setScanStatus("READY FOR NEXT", 'ready');
                     isProcessingScan = false;
-
-                    try {
-                        if (html5QrCode && html5QrCode.getState() === 3) {
-                            html5QrCode.resume();
-                        }
-                    } catch (e) { }
-
-                }, 2500);
+                    try { if (html5QrCode && html5QrCode.getState() === 3) html5QrCode.resume(); } catch (e) { }
+                }, 3000);
             }
         }
 
