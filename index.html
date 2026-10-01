@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>School Management V3.1</title>
+  <title>School Management V3.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
@@ -46,7 +46,7 @@
         <input type="password" id="adminPin" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest shadow-sm" placeholder="••••">
         <button onclick="loginAdmin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold transition-all shadow-md">Enter Dashboard</button>
       </div>
-      <div class="text-center text-[10px] font-bold text-slate-300 tracking-widest mt-2">v3.1 - Smart Override Engine</div>
+      <div class="text-center text-[10px] font-bold text-slate-300 tracking-widest mt-2">v3.3 - Double Exam Penalties</div>
     </div>
 
     <!-- ADMIN DASHBOARD -->
@@ -94,7 +94,7 @@
       <button onclick="nav('view-admin-dash')" class="text-sm font-bold text-slate-400 mt-2 text-center w-full">← Back to Dash</button>
     </div>
 
-    <!-- SMART UNIFIED MANUAL OVERRIDE (Used by Daily Log & Standalone) -->
+    <!-- SMART UNIFIED MANUAL OVERRIDE -->
     <div id="view-manual-edit" class="view gap-4">
       <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
         <h3 class="font-black text-blue-900 text-lg" id="overrideTitle">Direct Manual Entry</h3>
@@ -124,7 +124,7 @@
       <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
         <span class="text-3xl">⭐</span>
         <h3 class="font-black text-amber-900 mt-2">Strict Event Mode</h3>
-        <p class="text-[10px] font-bold text-amber-700 uppercase mt-1">Disables casual leave allowance.</p>
+        <p class="text-[10px] font-bold text-amber-700 uppercase mt-1">Disables casual leaves. Absences count as DOUBLE.</p>
       </div>
       
       <div class="flex flex-col gap-2">
@@ -168,8 +168,55 @@
       <div id="report-container" class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2"></div>
       <div class="text-[10px] text-center font-bold text-slate-400 mt-1 leading-relaxed">
         * 1 Free Leave applies to Normal Absent Days only.<br>
-        * Exam Days bypass Free Leaves. 3 Lates = 1 Penalty.
+        * Exam Days apply a DOUBLE Absence Penalty.<br>
+        * 3 Lates = 1 Penalty.
       </div>
+    </div>
+
+    <!-- INDIVIDUAL ATTENDANCE REVIEW -->
+    <div id="view-review" class="view gap-4">
+      <div class="text-center relative">
+        <h2 id="rev-name" class="text-xl font-extrabold text-blue-900">Loading...</h2>
+        <p id="rev-dept" class="text-xs font-bold text-slate-500 uppercase mt-1">...</p>
+        <div class="mt-2 inline-block bg-slate-100 border border-slate-200 px-3 py-1 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-widest" id="rev-month-display">...</div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3 mt-2">
+        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex justify-between items-center shadow-sm">
+          <span class="text-xs font-bold text-emerald-700 uppercase">Present</span>
+          <span class="text-xl font-black text-emerald-600" id="rev-present">0</span>
+        </div>
+        <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 flex justify-between items-center shadow-sm">
+          <span class="text-xs font-bold text-amber-700 uppercase">Late</span>
+          <span class="text-xl font-black text-amber-600" id="rev-late">0</span>
+        </div>
+      </div>
+      
+      <div class="mt-2 bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col gap-2">
+        <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+          <span>Normal Absent Days:</span>
+          <span id="rev-empty" class="text-slate-700 text-sm">0</span>
+        </div>
+        <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+          <span>- 1 Free Leave =</span>
+          <span id="rev-billable" class="text-slate-700 text-sm">0</span>
+        </div>
+        <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+          <span>+ Late Penalties:</span>
+          <span id="rev-penalty" class="text-amber-600 text-sm">0</span>
+        </div>
+        <div class="flex justify-between items-center text-xs font-bold text-red-500 uppercase">
+          <span>+ Exam Penalties (x2):</span>
+          <span id="rev-exam-penalty" class="text-red-600 text-sm">0</span>
+        </div>
+        <div class="flex justify-between items-center pt-2 mt-1 border-t border-slate-200">
+          <span class="text-xs font-bold text-red-500 uppercase tracking-widest">Final Absences:</span>
+          <span class="text-lg font-black text-red-600" id="rev-final">0</span>
+        </div>
+      </div>
+      
+      <div id="rev-status-box" class="text-center font-bold text-xs uppercase tracking-wider py-2 rounded-lg mt-1"></div>
+      <button onclick="closeReview()" class="bg-slate-800 text-white py-3 rounded-xl font-bold mt-2 shadow-md">Close Screen</button>
     </div>
 
   </div>
@@ -362,7 +409,7 @@
       nav('view-admin-dash');
     }
 
-    // --- MONTHLY REPORT ---
+    // --- MONTHLY REPORT WITH DOUBLE PENALTY ---
     async function generateMonthlyReport(event) {
       const btn = event.target; const orig = btn.innerHTML;
       btn.innerHTML = '<span class="loader border-white mr-2"></span> Calculating...';
@@ -385,9 +432,9 @@
             </div>
             <div class="bg-slate-50 rounded-lg p-3 text-[10px] font-bold text-slate-500 uppercase mt-2">
               <div class="flex justify-between"><span>Normal Absences:</span><span>${staff.empty}</span></div>
-              <div class="flex justify-between text-red-500"><span>Strict Exam Absences:</span><span>${staff.strictExamAbsence}</span></div>
               <div class="flex justify-between border-t mt-1 pt-1"><span>- 1 Free Leave (Normal Only) =</span><span>${staff.billableEmpty}</span></div>
               <div class="flex justify-between mt-1"><span>+ Late Penalty:</span><span class="text-amber-600">${staff.latePenalty}</span></div>
+              <div class="flex justify-between text-red-500 mt-1"><span>+ Exam Double Penalty:</span><span>${staff.strictExamAbsence}</span></div>
               <div class="flex justify-between items-center pt-2 mt-1 border-t text-red-600"><span class="tracking-widest">Final Deductions:</span><span class="text-lg font-black">${staff.finalDeductions}</span></div>
             </div>`;
           container.appendChild(card);
@@ -395,7 +442,67 @@
       }
     }
 
-    // --- SCANNER ENGINE W/ AUTO RECOVERY ---
+    // --- REVIEWS WITH DOUBLE PENALTY ---
+    async function checkReviewEndUser(event) {
+      const id = document.getElementById('teacherReviewId').value.trim(); 
+      if(!id) return;
+      const btn = event.target;
+      const originalText = btn.innerText;
+      btn.innerHTML = '<span class="loader border-white"></span> Waking Database...';
+      currentRole = 'enduser';
+      await triggerReview(id);
+      btn.innerHTML = originalText;
+      document.getElementById('teacherReviewId').value = '';
+    }
+
+    async function triggerReview(id) {
+      nav('view-review', `Review: ${id}`);
+      document.getElementById('rev-name').innerHTML = '<span class="loader border-blue-900"></span> Retrieving...';
+      document.getElementById('rev-dept').innerText = "";
+      document.getElementById('rev-month-display').innerText = "Loading...";
+      document.getElementById('rev-present').innerText = "-";
+      document.getElementById('rev-late').innerText = "-";
+      document.getElementById('rev-empty').innerText = "-";
+      document.getElementById('rev-billable').innerText = "-";
+      document.getElementById('rev-penalty').innerText = "-";
+      document.getElementById('rev-exam-penalty').innerText = "-";
+      document.getElementById('rev-final').innerText = "-";
+      document.getElementById('rev-status-box').className = "hidden";
+      
+      const cleanId = id.trim().toUpperCase();
+      const res = await apiCall({ action: 'getReview', teacherId: cleanId });
+      
+      if(res.success) {
+        document.getElementById('rev-name').innerText = res.stats.name;
+        document.getElementById('rev-dept').innerText = res.stats.dept;
+        document.getElementById('rev-month-display').innerText = `${res.stats.month} — ${res.stats.totalDays} Days Total`;
+        document.getElementById('rev-present').innerText = res.stats.present;
+        document.getElementById('rev-late').innerText = res.stats.late;
+        document.getElementById('rev-empty').innerText = res.stats.empty;
+        document.getElementById('rev-billable').innerText = res.stats.billableEmpty;
+        document.getElementById('rev-penalty').innerText = res.stats.latePenalty;
+        document.getElementById('rev-exam-penalty').innerText = res.stats.strictExamAbsence;
+        document.getElementById('rev-final').innerText = res.stats.finalDeductions;
+        
+        const statBox = document.getElementById('rev-status-box');
+        if(res.stats.status === "Left") {
+          statBox.innerText = "STATUS: INACTIVE / LEFT";
+          statBox.className = "text-center font-bold text-xs uppercase tracking-wider py-2 rounded-lg bg-red-100 text-red-700 mt-2 block";
+        } else {
+          statBox.innerText = "STATUS: ACTIVE";
+          statBox.className = "text-center font-bold text-xs uppercase tracking-wider py-2 rounded-lg bg-emerald-100 text-emerald-700 mt-2 block";
+        }
+      } else {
+        document.getElementById('rev-name').innerText = "ID Not Found";
+      }
+    }
+    
+    function closeReview() {
+      if(currentRole === 'admin') nav('view-staff-list', 'Manage Staff');
+      else nav('view-home', 'Authentication');
+    }
+
+    // --- SCANNER ENGINE ---
     let html5QrCode, currentFacingMode = "environment"; 
     const scanCooldowns = new Map();
     let isProcessingScan = false; 
